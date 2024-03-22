@@ -1,0 +1,12 @@
+{
+  "cSpell.words": ["Bunq"],
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit",
+    "source.organizeImports": "never"
+  },
+  "deno.enable": false,
+  "editor.formatOnSave": true,
+  "files.autoSave": "off",
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.tabSize": 2
+}

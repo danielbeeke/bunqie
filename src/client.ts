@@ -1,0 +1,10 @@
+import createClient from 'openapi-fetch'
+import type { paths } from './schema'
+
+export const client = createClient<paths>({ baseUrl: '/bunq/' })
+
+// client.POST('/session-server', {
+//    body: {
+
+//    }
+// })
