@@ -23,7 +23,7 @@ export const createKeyPair = async (identifier: string) => {
 export const getKeyPair = async (identifier: string) => {
   const privateKey = await get(identifier + ':client:private')
   const publicKey = await get(identifier + ':client:public')
-  return privateKey && publicKey ? { privateKey, publicKey } : undefined
+  return privateKey && publicKey ? ({ privateKey, publicKey } as CryptoKeyPair) : undefined
 }
 
 export const publicKeyToPEM = async (publicKey: CryptoKey) => {

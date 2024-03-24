@@ -1,68 +1,43 @@
-import { createKeyPair, publicKeyToPEM, saveServerKeys } from '../keyManagement'
+import { Action } from './Action'
 import { client } from '../client'
-import { isInstalled } from '../keyManagement'
-import { getHeaders } from '../getHeaders'
+import { createKeyPair, getKeyPair, getServerKeys, publicKeyToPEM, saveServerKeys } from '../keyManagement'
+import { Context } from '../Context'
 
-export default async (apiKey: string) => {
-  if (await isInstalled(apiKey)) {
-    console.log('Already installed')
-    return true
-  } else {
-    console.log('Installing...')
-  }
+export const ensureInstalled: Action = async (context: Context) => {
+  const getInstallations = client.path('/installation').method('get').create()
+  const postInstallation = client.path('/installation').method('post').create()
+  const postDeviceServer = client.path('/device-server').method('post').create()
 
-  const keyPair = await createKeyPair(apiKey)
-  const pem = await publicKeyToPEM(keyPair.publicKey)
-  const { data: rawInstallationData, error: installationError } = await client.POST('/installation', {
-    params: {
-      /** @ts-expect-error The typing for these headers are wrong in the open-api spec */
-      header: {
-        'User-Agent': 'Bunqie',
+  try {
+    const serverKeys = await getServerKeys(context.apiKey)
+    const { data: installationData } = await getInstallations(undefined as never, {
+      headers: { 'X-Bunq-Client-Authentication': serverKeys.Token.token },
+    })
+
+    /** @ts-expect-error The typing seems off */
+    if (installationData?.Id?.id) return true
+  } catch (error) {
+    let keyPair = await getKeyPair(context.apiKey)
+    if (!keyPair) keyPair = await createKeyPair(context.apiKey)
+    const client_public_key = await publicKeyToPEM(keyPair.publicKey)
+
+    const { data: installationData } = await postInstallation({ client_public_key })
+    await saveServerKeys(context.apiKey, installationData)
+
+    const { data: deviceData } = await postDeviceServer(
+      {
+        description: 'Bunqie',
+        secret: context.apiKey,
+        permitted_ips: ['*'],
       },
-    },
-    body: {
-      client_public_key: pem,
-    },
-  })
+      {
+        headers: { 'X-Bunq-Client-Authentication': installationData.Token.token },
+      }
+    )
 
-  if (installationError) {
-    console.log(installationError)
-    throw new Error('Could not install the key.')
+    /** @ts-expect-error The typing seems off */
+    return !!deviceData.Id.id
   }
 
-  /** @ts-expect-error The typings do something wrong so we have to massage the data a bit before it matches */
-  const installationData: typeof rawInstallationData = Object.assign({}, ...rawInstallationData.Response)
-
-  await saveServerKeys(apiKey, installationData)
-
-  if (!installationData.Token?.token) {
-    console.log(installationData)
-    throw new Error('The server did not give a token')
-  }
-
-  const { data: rawDeviceData, error: deviceError } = await client.POST('/device-server', {
-    params: {
-      /** @ts-ignore */
-      header: getHeaders({
-        clientAuthentication: installationData.Token.token,
-      }),
-    },
-    body: {
-      description: 'Bunqie',
-      secret: apiKey,
-      permitted_ips: ['*'],
-    },
-  })
-
-  if (deviceError) {
-    console.log(deviceError)
-    throw new Error('Had an error trying to register the device')
-  }
-
-  /** @ts-expect-error The typings do something wrong so we have to massage the data a bit before it matches */
-  const deviceData: { Id?: string } = Object.assign({}, ...rawDeviceData.Response)
-
-  if (!deviceData?.Id) throw new Error('Could not finish the installation')
-
-  return true
+  return false
 }

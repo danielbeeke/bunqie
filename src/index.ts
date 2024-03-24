@@ -1,7 +1,21 @@
-import installation from './actions/installation'
-import session from './actions/session.ts'
+const apiKey = 'sandbox_b29e8a99fe1b26f95d675f47bb8587e944cadfbd009daf4dbf0e3b5d'
 
-const apiKey = 'sandbox_7faf14ed150764a497a4add6a06b99040805235b0e420bb83a7bb5b3'
-const installed = await installation(apiKey)
-if (!installed) throw new Error('Could not install')
-const userSession = await session(apiKey)
+import { Context } from './Context'
+import { ensureInstalled } from './actions/installation'
+import { createSession } from './actions/session'
+import { client } from './client'
+import { executor } from './executor'
+
+const context: Context = {
+  apiKey,
+}
+
+const report = await executor(context, {
+  ensureInstalled,
+  createSession,
+})
+
+const user = client.path('/user').method('get').create()
+const { data } = await user({})
+
+console.log(data)

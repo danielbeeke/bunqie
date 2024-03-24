@@ -8,16 +8,16 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "generate": "npx openapi-typescript https://raw.githubusercontent.com/bunq/doc/master/swagger.json -o ./src/schema.d.ts"
+    "generate": "npx openapi-typescript https://raw.githubusercontent.com/bunq/doc/master/swagger.json --output ./src/schema.d.ts"
   },
   "devDependencies": {
-    "openapi-typescript": "^7.0.0-next.8",
-    "openapi-typescript-helpers": "^0.0.7",
+    "openapi-typescript": "6",
     "typescript": "^5.4.2",
     "vite": "^5.1.6"
   },
   "dependencies": {
     "idb-keyval": "^6.2.1",
-    "openapi-fetch": "^0.9.3"
+    "openapi-fetch": "^0.9.3",
+    "openapi-typescript-fetch": "^2.0.0"
   }
 }
