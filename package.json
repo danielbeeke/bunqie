@@ -17,7 +17,9 @@
   },
   "dependencies": {
     "idb-keyval": "^6.2.1",
+    "openapi-client-axios": "^7.5.4",
     "openapi-fetch": "^0.9.3",
-    "openapi-typescript-fetch": "^2.0.0"
+    "openapi-typescript-fetch": "^2.0.0",
+    "openapicmd": "^2.3.1"
   }
 }

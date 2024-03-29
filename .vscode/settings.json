@@ -1,5 +1,5 @@
 {
-  "cSpell.words": ["Bunq"],
+  "cSpell.words": ["Bunq", "Bunqy", "openapi"],
   "editor.codeActionsOnSave": {
     "source.fixAll": "explicit",
     "source.organizeImports": "never",
