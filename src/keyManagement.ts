@@ -1,5 +1,5 @@
 import { get, set } from 'idb-keyval'
-import type { components } from './schema'
+import type { components } from './schema.d.ts'
 
 export interface ServerPublicKey {
   server_public_key: string

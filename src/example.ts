@@ -1,4 +1,4 @@
-import { Bunqy } from './Bunqie'
+import { Bunqy } from './Bunqie.ts'
 
 const client = new Bunqy({ apiKey: import.meta.env.VITE_BUNQ })
 await client.init()

@@ -1,8 +1,11 @@
 {
-    "compilerOptions": {
-        "target": "ESNext",
-        "module": "ESNext",
-        "moduleResolution": "Bundler",
-        "noUncheckedIndexedAccess": true
-    }
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": true,
+    "noUncheckedIndexedAccess": true,
+    "emitDeclarationOnly": true,
+    "declaration": true
+  }
 }
