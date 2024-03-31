@@ -1,5 +1,5 @@
 import { createKeyPair, getKeyPair, getServerKeys, publicKeyToPEM, saveServerKeys } from './keyManagement.ts'
-import type { paths } from './schema.ts'
+import type { paths } from './schema.d.ts'
 import type {
   PathsWithMethod,
   HttpMethod,
