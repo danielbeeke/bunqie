@@ -1,4 +1,3 @@
-import { Context } from './types'
 import { createKeyPair, getKeyPair, getServerKeys, publicKeyToPEM, saveServerKeys } from './keyManagement'
 import type { paths } from './schema'
 import type {
@@ -8,30 +7,34 @@ import type {
   SuccessResponse,
   OperationRequestBodyMediaContent,
   JSONLike,
-} from 'openapi-typescript-helpers'
+  ResponseContent,
+  OkStatus,
+  FilterKeys,
+} from './types'
+
+export type Context = {
+  apiKey?: string
+  token?: string
+  userID?: number
+}
 
 export class Bunqy {
-  context: Context
+  constructor(public context: Context) {}
 
-  constructor(context: Context) {
-    this.context = context
-  }
-
-  async init() {
+  async init(): Promise<void> {
     const serverKeys = await getServerKeys(this.context.apiKey)
 
     try {
-      await this.request('get', '/installation', {
+      await this.get('/installation', {
         headers: { 'X-Bunq-Client-Authentication': serverKeys.Token.token },
       })
     } catch (error) {
       let keyPair = await getKeyPair(this.context.apiKey)
       if (!keyPair) keyPair = await createKeyPair(this.context.apiKey)
       const client_public_key = await publicKeyToPEM(keyPair.publicKey)
-      const installationData = await this.request('post', '/installation', {}, { client_public_key })
+      const installationData = await this.post('/installation', {}, { client_public_key })
       await saveServerKeys(this.context.apiKey, installationData)
-      await this.request(
-        'post',
+      await this.post(
         '/device-server',
         {
           headers: { 'X-Bunq-Client-Authentication': installationData.Token.token },
@@ -44,8 +47,7 @@ export class Bunqy {
       )
     }
 
-    const sessionData = await this.request(
-      'post',
+    const sessionData = await this.post(
       '/session-server',
       { headers: { 'X-Bunq-Client-Authentication': serverKeys.Token.token } },
       { secret: this.context.apiKey }
@@ -65,7 +67,12 @@ export class Bunqy {
     const M extends keyof paths[P] & HttpMethod,
     P extends PathsWithMethod<paths, M>,
     B extends JSONLike<OperationRequestBodyMediaContent<paths[P][M]>>
-  >(method: M, path: P, init: RequestInit = {}, body?: B) {
+  >(
+    method: M,
+    path: P,
+    init: RequestInit = {},
+    body?: B
+  ): Promise<JSONLike<ResponseContent<FilterKeys<ResponseObjectMap<paths[P][M]>, OkStatus>>>> {
     const lat = 5.3833993
     const lng = 52.1562025
 
@@ -97,15 +104,54 @@ export class Bunqy {
       mergedInit.headers['X-Bunq-Client-Authentication'] = this.context.token
     }
 
-    const url = `/bunq${path}`.replaceAll('{userID}', this.context.userID?.toString() ?? '')
+    const variableMatches = [...path.matchAll(/{(.*?)}/g)]
+
+    let replacedPath: string = path
+
+    if (variableMatches.length) {
+      for (const [token, name] of variableMatches) {
+        if (!this.context[name]) throw new Error(`Used the variable ${name} but it was not set in the context`)
+        replacedPath = replacedPath.replaceAll(token, this.context[name])
+      }
+    }
+
+    const url = `/bunq${replacedPath}`
 
     const response = await fetch(url, mergedInit)
     type ResponseObject = ResponseObjectMap<paths[P][M]>
     const output = await response.json()
 
-    if (response.status === 200) return output.Response as JSONLike<SuccessResponse<ResponseObject>>
+    if (!output.Error) {
+      return output.Response as JSONLike<SuccessResponse<ResponseObject>>
+    }
 
     console.error(output)
     throw new Error('Something went wrong')
+  }
+
+  async post<
+    P extends PathsWithMethod<paths, 'post'>,
+    B extends JSONLike<OperationRequestBodyMediaContent<paths[P]['post']>>
+  >(
+    path: P,
+    init: RequestInit = {},
+    body?: B
+  ): Promise<JSONLike<ResponseContent<FilterKeys<ResponseObjectMap<paths[P]['post']>, OkStatus>>>> {
+    return this.request('post', path, init, body) as unknown as Promise<
+      JSONLike<ResponseContent<FilterKeys<ResponseObjectMap<paths[P]['post']>, OkStatus>>>
+    >
+  }
+
+  async get<
+    P extends PathsWithMethod<paths, 'get'>,
+    B extends JSONLike<OperationRequestBodyMediaContent<paths[P]['get']>>
+  >(
+    path: P,
+    init: RequestInit = {},
+    body?: B
+  ): Promise<JSONLike<ResponseContent<FilterKeys<ResponseObjectMap<paths[P]['get']>, OkStatus>>>> {
+    return this.request('get', path, init, body) as unknown as Promise<
+      JSONLike<ResponseContent<FilterKeys<ResponseObjectMap<paths[P]['get']>, OkStatus>>>
+    >
   }
 }

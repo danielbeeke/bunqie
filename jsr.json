@@ -1,0 +1,5 @@
+{
+  "name": "@danielbeeke/bunqie",
+  "version": "0.1.0",
+  "exports": "./src/Bunqie.ts"
+}
