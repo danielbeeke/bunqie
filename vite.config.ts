@@ -4,7 +4,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/bunq': {
-        target: 'https://public-api.sandbox.bunq.com/v1/',
+        target: 'https://api.bunq.com/v1/',
         changeOrigin: true,
         cookiePathRewrite: {
           '*': '/',

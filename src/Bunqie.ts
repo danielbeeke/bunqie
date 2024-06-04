@@ -35,10 +35,12 @@ export class Bunqy {
       serverKeys = await this.post('/installation', {}, { client_public_key })
       await saveServerKeys(this.context.apiKey, serverKeys)
 
+      const serverKeysToken = serverKeys.find((item) => item.Token)
+
       await this.post(
         '/device-server',
         {
-          headers: { 'X-Bunq-Client-Authentication': serverKeys.Token.token },
+          headers: { 'X-Bunq-Client-Authentication': serverKeysToken.Token.token },
         },
         {
           description: 'Bunqie',
@@ -48,11 +50,13 @@ export class Bunqy {
       )
     }
 
-    const sessionData = await this.post(
+    const sessionDataItems = await this.post(
       '/session-server',
       { headers: { 'X-Bunq-Client-Authentication': serverKeys.Token.token } },
       { secret: this.context.apiKey }
     )
+
+    const sessionData = sessionDataItems.find((item) => item.Token)
 
     if (sessionData.Token.token) {
       this.context.token = sessionData.Token.token
@@ -115,14 +119,11 @@ export class Bunqy {
 
     const url = `/bunq${replacedPath}`
 
-    const response = await fetch(url, mergedInit)
+    const response = await fetch(url + '?count=200', mergedInit)
     type ResponseObject = ResponseObjectMap<paths[P][M]>
     const output = await response.json()
 
     if (!output.Error) {
-      if (Array.isArray(output.Response)) {
-        return Object.assign({}, ...output.Response) as JSONLike<SuccessResponse<ResponseObject>>
-      }
       return output.Response as JSONLike<SuccessResponse<ResponseObject>>
     }
 
