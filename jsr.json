@@ -1,5 +1,6 @@
 {
   "name": "@danielbeeke/bunqie",
   "version": "0.1.0",
-  "exports": "./src/Bunqie.ts"
+  "exports": "./src/Bunqie.ts",
+  "description": "A tool to gather Bunq bank data"
 }
