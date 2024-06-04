@@ -22,7 +22,7 @@ export class Bunqy {
   constructor(public context: Context) {}
 
   async init(): Promise<void> {
-    const serverKeys = await getServerKeys(this.context.apiKey)
+    let serverKeys = await getServerKeys(this.context.apiKey)
 
     try {
       await this.get('/installation', {
@@ -32,12 +32,13 @@ export class Bunqy {
       let keyPair = await getKeyPair(this.context.apiKey)
       if (!keyPair) keyPair = await createKeyPair(this.context.apiKey)
       const client_public_key = await publicKeyToPEM(keyPair.publicKey)
-      const installationData = await this.post('/installation', {}, { client_public_key })
-      await saveServerKeys(this.context.apiKey, installationData)
+      serverKeys = await this.post('/installation', {}, { client_public_key })
+      await saveServerKeys(this.context.apiKey, serverKeys)
+
       await this.post(
         '/device-server',
         {
-          headers: { 'X-Bunq-Client-Authentication': installationData.Token.token },
+          headers: { 'X-Bunq-Client-Authentication': serverKeys.Token.token },
         },
         {
           description: 'Bunqie',
@@ -53,11 +54,8 @@ export class Bunqy {
       { secret: this.context.apiKey }
     )
 
-    /** @ts-expect-error The typings are off */
-    const tokenData = sessionData.find((response) => response.Token)
-
-    if (tokenData.Token.token) {
-      this.context.token = tokenData.Token.token
+    if (sessionData.Token.token) {
+      this.context.token = sessionData.Token.token
     } else {
       throw new Error('Could not initiate session')
     }
@@ -93,7 +91,7 @@ export class Bunqy {
     if (body) {
       const keyPair = await getKeyPair(this.context.apiKey)
       const encoder = new TextEncoder()
-      const encoded = encoder.encode(init.body as string)
+      const encoded = encoder.encode(JSON.stringify(body) as string)
       const signatureAsArrayBuffer = await window.crypto.subtle.sign('RSASSA-PKCS1-v1_5', keyPair.privateKey, encoded)
       const signature = btoa(String.fromCharCode(...new Uint8Array(signatureAsArrayBuffer)))
       mergedInit.headers['X-Bunq-Client-Signature'] = signature
@@ -122,6 +120,9 @@ export class Bunqy {
     const output = await response.json()
 
     if (!output.Error) {
+      if (Array.isArray(output.Response)) {
+        return Object.assign({}, ...output.Response) as JSONLike<SuccessResponse<ResponseObject>>
+      }
       return output.Response as JSONLike<SuccessResponse<ResponseObject>>
     }
 
